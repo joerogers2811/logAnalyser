@@ -1,9 +1,11 @@
 package com.sre.triage.infrastructure.api.controller;
 
+import com.sre.triage.domain.service.LogProcessingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -15,6 +17,9 @@ public class LogControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+    @MockitoBean
+    private LogProcessingService logProcessingService;
+
 
     @Test
     public void shouldReturn202AndJobIdForValidPayload() throws Exception {
