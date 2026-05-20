@@ -28,6 +28,9 @@ public class LogController {
                     incidentRequest.timestamp(),
                     incidentRequest.rawLogDump());
 
+            logProcessingService.registerIncident(incident);
+            logProcessingService.processTriage(incident.getId());
+
             return new ResponseEntity<>(new IncidentResponse(incident.getId().toString()), HttpStatus.ACCEPTED);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
