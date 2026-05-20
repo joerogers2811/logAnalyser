@@ -30,11 +30,6 @@ public class LogControllerTest {
     @MockitoBean
     private LogProcessingService logProcessingService;
 
-    @BeforeEach
-    public void setUp() {
-        // Set up any initial data if needed
-    }
-
     @Test
     public void shouldReturn202AndJobIdForValidPayload() throws Exception {
 
