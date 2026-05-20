@@ -1,6 +1,8 @@
 package com.sre.triage.domain.service;
 
+import com.sre.triage.domain.model.Incident;
+
 public interface LogProcessingService {
 
-    String process(String rawLogs);
+    void process(Incident rawLogs);
 }

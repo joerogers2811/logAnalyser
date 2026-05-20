@@ -1,5 +1,6 @@
 package com.sre.triage.infrastructure.api.controller;
 
+import com.sre.triage.domain.model.Incident;
 import com.sre.triage.domain.service.LogProcessingService;
 import com.sre.triage.infrastructure.api.dto.IncidentRequest;
 import com.sre.triage.infrastructure.api.dto.IncidentResponse;
@@ -21,8 +22,13 @@ public class LogController {
     @PostMapping("/api/v1/analyzer/jobs")
     public ResponseEntity<IncidentResponse> createJob(@RequestBody IncidentRequest incidentRequest) {
         try {
-            String jobId = logProcessingService.process(incidentRequest.rawLogDump());
-            return new ResponseEntity<>(new IncidentResponse(jobId), HttpStatus.ACCEPTED);
+            Incident incident = new Incident(
+                    incidentRequest.serviceName(),
+                    incidentRequest.environment(),
+                    incidentRequest.timestamp(),
+                    incidentRequest.rawLogDump());
+
+            return new ResponseEntity<>(new IncidentResponse(incident.getId().toString()), HttpStatus.ACCEPTED);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }

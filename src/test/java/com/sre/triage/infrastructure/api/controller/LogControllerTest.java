@@ -12,10 +12,10 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(LogController.class)
 public class LogControllerTest {
@@ -47,14 +47,13 @@ public class LogControllerTest {
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonPayload = objectMapper.writeValueAsString(request);
 
-        String expectedJobId = "job-12345";
-        when(logProcessingService.process(realisticLog)).thenReturn(expectedJobId);
-
+        // Standard UUID regex pattern (v1 through v5 matching)
+        String uuidRegex = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
         mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonPayload))
                .andExpect(status().isAccepted())
-               .andExpect(content().json("{\"jobId\":\"" + expectedJobId + "\"}"));
+                .andExpect(jsonPath("$.jobId").value(matchesPattern(uuidRegex)));
     }
 
     @Test
