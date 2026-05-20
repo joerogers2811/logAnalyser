@@ -13,7 +13,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Instant;
 
 import static org.hamcrest.Matchers.matchesPattern;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -52,7 +51,7 @@ public class LogControllerTest {
         mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonPayload))
-               .andExpect(status().isAccepted())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.jobId").value(matchesPattern(uuidRegex)));
     }
 
