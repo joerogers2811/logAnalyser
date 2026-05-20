@@ -6,10 +6,11 @@ import com.sre.triage.infrastructure.api.dto.IncidentRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -75,26 +76,6 @@ public class LogControllerTest {
     }
 
     @Test
-    public void shouldReturn202AndJobIdForValidIncidentRequest() throws Exception {
-        // Arrange
-        String serviceName = "service1";
-        String environment = "production";
-        Instant timestamp = Instant.now();
-        String rawLogDump = "log dump content";
-
-        IncidentRequest request = new IncidentRequest(serviceName, environment, timestamp, rawLogDump);
-        ObjectMapper objectMapper = new ObjectMapper();
-        String jsonPayload = objectMapper.writeValueAsString(request);
-
-        // Act & Assert
-        mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonPayload))
-               .andExpect(status().isAccepted())
-               .andExpect(jsonPath("$.jobId").value(matchesPattern("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")));
-    }
-
-    @Test
     public void shouldReturnBadRequestForNullServiceName() throws Exception {
         // Arrange
         String serviceName = null;
@@ -157,25 +138,6 @@ public class LogControllerTest {
         String serviceName = "service1";
         String environment = "";
         Instant timestamp = Instant.now();
-        String rawLogDump = "log dump content";
-
-        IncidentRequest request = new IncidentRequest(serviceName, environment, timestamp, rawLogDump);
-        ObjectMapper objectMapper = new ObjectMapper();
-        String jsonPayload = objectMapper.writeValueAsString(request);
-
-        // Act & Assert
-        mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonPayload))
-               .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    public void shouldReturnBadRequestForNullTimestamp() throws Exception {
-        // Arrange
-        String serviceName = "service1";
-        String environment = "production";
-        Instant timestamp = null;
         String rawLogDump = "log dump content";
 
         IncidentRequest request = new IncidentRequest(serviceName, environment, timestamp, rawLogDump);

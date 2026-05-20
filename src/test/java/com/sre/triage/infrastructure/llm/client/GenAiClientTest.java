@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 class GenAiClientTest {
 
     @Mock
-    private ChatModel chatModel; 
+    private ChatModel chatModel;
 
     private GenAiClient genAiClient;
 
