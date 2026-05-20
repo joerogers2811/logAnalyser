@@ -13,6 +13,6 @@ public class LogController {
     @PostMapping("/api/v1/analyzer/jobs")
     public ResponseEntity<String> createJob() {
         String jobId = "job-12345"; // Replace with actual job ID generation logic
-        return new ResponseEntity<>(jobId, HttpStatus.ACCEPTED);
+        return new ResponseEntity<>("{\"jobId\":\"" + jobId + "\"}", HttpStatus.ACCEPTED);
     }
 }
