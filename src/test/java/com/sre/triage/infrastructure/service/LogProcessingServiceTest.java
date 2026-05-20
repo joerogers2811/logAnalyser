@@ -38,10 +38,8 @@ public class LogProcessingServiceTest {
         String environment = "env1";
         Instant detectedAt = Instant.now();
         String rawLogDump = "log dump";
-        TriageReport report = new TriageReport();
 
-        Incident incident = new Incident(id, serviceName, environment, detectedAt, rawLogDump);
-        incident.applyTriageReport(report);
+        Incident incident = new Incident(serviceName, environment, detectedAt, rawLogDump);
 
         // Act
         logProcessingService.registerIncident(incident);
