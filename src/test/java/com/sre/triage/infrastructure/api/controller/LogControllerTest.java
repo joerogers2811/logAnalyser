@@ -1,8 +1,10 @@
 package com.sre.triage.infrastructure.api.controller;
 
 import com.sre.triage.domain.model.Incident;
+import com.sre.triage.domain.model.TriageReport;
 import com.sre.triage.domain.service.LogProcessingService;
 import com.sre.triage.infrastructure.api.dto.IncidentRequest;
+import com.sre.triage.infrastructure.llm.client.GenAiClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +12,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
@@ -18,12 +21,18 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.sre.triage.domain.model.IncidentCategory;
+import java.time.Duration;
 
 @WebMvcTest(LogController.class)
 public class LogControllerTest {
 
+    private static final String SUBMIT_ENDPOINT = "/logs/api/v1/analyser/submit";
+    private static final String GET_ENDPOINT = "/logs/api/v1/analyser/get";
     @Autowired
     private MockMvc mockMvc;
 
@@ -53,9 +62,7 @@ public class LogControllerTest {
 
         // Standard UUID regex pattern (v1 through v5 matching)
         String uuidRegex = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
-        mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonPayload))
+        callSubmit(jsonPayload)
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.jobId").value(matchesPattern(uuidRegex)));
     }
@@ -64,10 +71,7 @@ public class LogControllerTest {
     public void shouldReturnBadRequestForInvalidPayload() throws Exception {
         String invalidPayload = "invalid-payload";
 
-        mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(invalidPayload))
-               .andExpect(status().isBadRequest());
+        callSubmit(invalidPayload).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -83,10 +87,7 @@ public class LogControllerTest {
         String jsonPayload = objectMapper.writeValueAsString(request);
 
         // Act & Assert
-        mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonPayload))
-               .andExpect(status().isBadRequest());
+        callSubmit(jsonPayload).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -102,10 +103,7 @@ public class LogControllerTest {
         String jsonPayload = objectMapper.writeValueAsString(request);
 
         // Act & Assert
-        mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonPayload))
-               .andExpect(status().isBadRequest());
+        callSubmit(jsonPayload).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -121,10 +119,7 @@ public class LogControllerTest {
         String jsonPayload = objectMapper.writeValueAsString(request);
 
         // Act & Assert
-        mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonPayload))
-               .andExpect(status().isBadRequest());
+        callSubmit(jsonPayload).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -140,9 +135,7 @@ public class LogControllerTest {
         String jsonPayload = objectMapper.writeValueAsString(request);
 
         // Act & Assert
-        mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonPayload))
+        callSubmit(jsonPayload)
                .andExpect(status().isBadRequest());
     }
 
@@ -159,9 +152,7 @@ public class LogControllerTest {
         String jsonPayload = objectMapper.writeValueAsString(request);
 
         // Act & Assert
-        mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonPayload))
+       callSubmit(jsonPayload)
                .andExpect(status().isBadRequest());
     }
 
@@ -178,9 +169,71 @@ public class LogControllerTest {
         String jsonPayload = objectMapper.writeValueAsString(request);
 
         // Act & Assert
-        mockMvc.perform(post("/logs/api/v1/analyzer/jobs")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonPayload))
+        callSubmit(jsonPayload)
                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void shouldReturnTriageReportForValidId() throws Exception {
+        // Arrange
+        UUID id = UUID.randomUUID();
+        TriageReport.LlmTelemetry telemetry = new TriageReport.LlmTelemetry(100, Duration.ofMillis(500), 200.0);
+        TriageReport expectedReport = new TriageReport(
+                IncidentCategory.DATABASE_TIMEOUT,
+                "High impact",
+                "DB connection pool exhausted",
+                "Increase pool size",
+                telemetry
+        );
+
+        Incident expectedIncident = new Incident(
+                "payment-gateway",
+                "production",
+                Instant.parse("2026-05-19T17:42:00Z"),
+                "log dump"
+        );
+        expectedIncident.applyTriageReport(expectedReport);
+
+        when(logProcessingService.getIncident(id)).thenReturn(expectedIncident);
+
+        // Act & Assert
+        callRetrieve(id.toString())
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.serviceName").value("payment-gateway"))
+                .andExpect(jsonPath("$.report.category").value("DATABASE_TIMEOUT"))
+                .andExpect(jsonPath("$.report.impactSummary").value("High impact"))
+                .andExpect(jsonPath("$.report.rootCause").value("DB connection pool exhausted"))
+                .andExpect(jsonPath("$.report.recommendedAction").value("Increase pool size"))
+                .andExpect(jsonPath("$.report.telemetry.tokenCount").value(100));
+    }
+
+    @Test
+    public void shouldReturnNotFoundForMissingId() throws Exception {
+        // Arrange
+        UUID id = UUID.randomUUID();
+        when(logProcessingService.getIncident(id)).thenReturn(null);
+
+        // Act & Assert
+        callRetrieve(id.toString())
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void shouldReturnBadRequestForInvalidUuid() throws Exception {
+        // Act & Assert
+        callRetrieve("not-a-uuid")
+                .andExpect(status().isBadRequest());
+    }
+
+
+    private ResultActions callSubmit(String jsonPayload) throws Exception {
+        return mockMvc.perform(post(SUBMIT_ENDPOINT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonPayload));
+    }
+    
+    private ResultActions callRetrieve(String id) throws Exception {
+        return mockMvc.perform(get(GET_ENDPOINT + "/" + id));
     }
 }

@@ -1,7 +1,6 @@
 package com.sre.triage.infrastructure.service;
 
 import com.sre.triage.domain.model.Incident;
-import com.sre.triage.domain.model.TriageReport;
 import com.sre.triage.infrastructure.persistence.entity.IncidentEntity;
 import com.sre.triage.infrastructure.persistence.repository.IncidentRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,7 +12,6 @@ import org.mockito.MockitoAnnotations;
 import java.time.Instant;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
