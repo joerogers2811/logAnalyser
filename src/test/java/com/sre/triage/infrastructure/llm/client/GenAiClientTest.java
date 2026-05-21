@@ -17,6 +17,7 @@ import org.springframework.ai.chat.prompt.DefaultChatOptions;
 import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -58,5 +59,24 @@ class GenAiClientTest {
         TriageReport actualReport = genAiClient.analyzeLogs("NullPointerException...");
 
         assertThat(actualReport.category()).isEqualTo(IncidentCategory.DATABASE_TIMEOUT);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenLlmReturnsNull() {
+        // ChatClient.call().entity(TriageReport.class) might return null if something goes wrong
+        // In the mock, we can simulate this by making chatModel.call return a response that doesn't result in an entity
+        
+        when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class)))
+                .thenReturn(null);
+
+        assertThrows(IllegalStateException.class, () -> genAiClient.analyzeLogs("logs"));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenChatModelThrows() {
+        when(chatModel.call(any(org.springframework.ai.chat.prompt.Prompt.class)))
+                .thenThrow(new RuntimeException("API error"));
+
+        assertThrows(IllegalStateException.class, () -> genAiClient.analyzeLogs("logs"));
     }
 }
