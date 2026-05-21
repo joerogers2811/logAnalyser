@@ -1,6 +1,6 @@
-# logAnalyser
+# Log Analyser
 
-`logAnalyser` is a Spring Boot service designed to automate the triage of application crash logs and stack traces using Local LLMs (via Ollama). It provides an asynchronous API to submit logs, which are then analyzed by an AI model to determine root causes, assess impact, and suggest recovery actions.
+`Log Analyser` is a Spring Boot service designed to automate the triage of application crash logs and stack traces using an LLM. It provides an asynchronous API to submit logs, which are then analyzed by an AI model to determine root causes, assess impact, and suggest recovery actions.
 
 ## Features
 
@@ -24,6 +24,17 @@
 - **H2 Database**: In-memory storage (configurable).
 - **SpringDoc OpenAPI**: Swagger UI documentation.
 
+## Architecture
+
+The code is split into domain and infrastructure packages to keep the core business logic separate from 
+the details of persistence and AI integration. This separation enhances maintainability and testability.
+
+The use of Spring AI means that, although development has been done against a local LLM running in Ollama,
+modifications to use other LLM providers or cloud services can be made with minimal impact on the core business logic.
+
+Similarly, development and testing has used the in memory H2 database, but conversion to other databases is straightforward.
+
+
 ## Prerequisites
 
 1.  **Java 21** or higher.
@@ -46,6 +57,8 @@
 
 3.  **Access the API Documentation**:
     Open your browser and navigate to: `http://localhost:8080/swagger-ui.html`
+    Note that the stack trace must be escaped for inclusion in a json object before pasting into the Swagger 
+    interface. 
 
 ## API Usage
 
@@ -90,6 +103,20 @@
   }
 }
 ```
+
+## Design Trade offs
+In a production environment, consider the following trade-offs:
+
+I have not considered security in this test/demonstration application, in a production setting one would want to 
+implement OAuth2 or similar to secure the endpoints. 
+
+The simple in-memory processing used here may not be sufficient at scale, where a Kafka or similar queue might be 
+more appropriate (depending on load). 
+
+No consideration is given to log retention timescales, the database will simply grow forever. As the in memory 
+H2 database is blanked at every re-start, this is not a problem for the test application. However, a production deployment
+would need to take retention policies into account to manage database size and performance as well as regulatory concerns.
+
 
 ## Configuration
 
