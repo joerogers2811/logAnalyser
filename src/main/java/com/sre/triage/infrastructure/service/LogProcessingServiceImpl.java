@@ -74,10 +74,5 @@ public class LogProcessingServiceImpl implements LogProcessingService {
         }
     }
 
-    @Override
-    public Incident getIncident(UUID incidentId) {
-        return repository.findById(incidentId)
-                .map(IncidentEntity::toDomain)
-                .orElse(null);
-    }
+
 }

@@ -1,11 +1,12 @@
 package com.sre.triage.infrastructure.api.controller;
 
-import com.sre.triage.domain.model.Incident;
+import com.sre.triage.domain.model.IncidentCategory;
+import com.sre.triage.domain.model.IncidentStatus;
 import com.sre.triage.domain.model.TriageReport;
 import com.sre.triage.domain.service.LogProcessingService;
+import com.sre.triage.infrastructure.api.dto.IncidentReportResponse;
 import com.sre.triage.infrastructure.api.dto.IncidentRequest;
-import com.sre.triage.infrastructure.llm.client.GenAiClient;
-import org.junit.jupiter.api.BeforeEach;
+import com.sre.triage.infrastructure.service.LogQueryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -15,18 +16,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.matchesPattern;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-import com.sre.triage.domain.model.IncidentCategory;
-import java.time.Duration;
 
 @WebMvcTest(LogController.class)
 public class LogControllerTest {
@@ -38,6 +37,9 @@ public class LogControllerTest {
 
     @MockitoBean
     private LogProcessingService logProcessingService;
+
+    @MockitoBean
+    private LogQueryService logQueryService;
 
     @Test
     public void shouldReturn202AndJobIdForValidPayload() throws Exception {
@@ -186,15 +188,16 @@ public class LogControllerTest {
                 telemetry
         );
 
-        Incident expectedIncident = new Incident(
+        IncidentReportResponse expectedIncident = new IncidentReportResponse(
+                 id,
                 "payment-gateway",
                 "production",
                 Instant.parse("2026-05-19T17:42:00Z"),
-                "log dump"
+                IncidentStatus.TRIAGED,
+                expectedReport
         );
-        expectedIncident.applyTriageReport(expectedReport);
 
-        when(logProcessingService.getIncident(id)).thenReturn(expectedIncident);
+        when(logQueryService.getIncidentReport(id)).thenReturn(Optional.of(expectedIncident));
 
         // Act & Assert
         callRetrieve(id.toString())
@@ -212,7 +215,8 @@ public class LogControllerTest {
     public void shouldReturnNotFoundForMissingId() throws Exception {
         // Arrange
         UUID id = UUID.randomUUID();
-        when(logProcessingService.getIncident(id)).thenReturn(null);
+        when(logQueryService.getIncidentReport(
+                id)).thenReturn(Optional.empty());
 
         // Act & Assert
         callRetrieve(id.toString())
@@ -232,7 +236,7 @@ public class LogControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonPayload));
     }
-    
+
     private ResultActions callRetrieve(String id) throws Exception {
         return mockMvc.perform(get(GET_ENDPOINT + "/" + id));
     }

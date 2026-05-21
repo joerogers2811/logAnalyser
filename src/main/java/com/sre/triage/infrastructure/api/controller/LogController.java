@@ -1,10 +1,11 @@
 package com.sre.triage.infrastructure.api.controller;
 
 import com.sre.triage.domain.model.Incident;
-import com.sre.triage.domain.model.TriageReport;
 import com.sre.triage.domain.service.LogProcessingService;
+import com.sre.triage.infrastructure.api.dto.IncidentReportResponse;
 import com.sre.triage.infrastructure.api.dto.IncidentRequest;
 import com.sre.triage.infrastructure.api.dto.IncidentResponse;
+import com.sre.triage.infrastructure.service.LogQueryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,15 +19,13 @@ public class LogController {
 
     @Autowired
     private LogProcessingService logProcessingService;
+    @Autowired
+    private LogQueryService queryService;
 
     @PostMapping("/submit")
     public ResponseEntity<IncidentResponse> createJob(@RequestBody IncidentRequest incidentRequest) {
         try {
-            Incident incident = new Incident(
-                    incidentRequest.serviceName(),
-                    incidentRequest.environment(),
-                    incidentRequest.timestamp(),
-                    incidentRequest.rawLogDump());
+            Incident incident = toIncident(incidentRequest);
 
             logProcessingService.registerIncident(incident);
             logProcessingService.processTriage(incident.getId());
@@ -38,16 +37,24 @@ public class LogController {
     }
 
     @GetMapping("/get/{id}")
-    public ResponseEntity<Incident> getReport(@PathVariable String id) {
+    public ResponseEntity<IncidentReportResponse> getReport(@PathVariable UUID id) {
         try {
-            UUID uuid = UUID.fromString(id);
-            Incident incident = logProcessingService.getIncident(uuid);
-            if (incident == null) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-            return new ResponseEntity<>(incident, HttpStatus.OK);
+            return queryService.getIncidentReport(id)
+                    .map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
+
+    private Incident toIncident(IncidentRequest incidentRequest) {
+        return new Incident(
+                incidentRequest.serviceName(),
+                incidentRequest.environment(),
+                incidentRequest.timestamp(),
+                incidentRequest.rawLogDump()
+        );
+    }
+
 }
