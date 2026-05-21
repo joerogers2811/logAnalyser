@@ -10,7 +10,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.Instant;
-import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -31,7 +30,6 @@ public class LogProcessingServiceTest {
     @Test
     public void testRegisterIncident_SavesToDatabase() {
         // Arrange
-        UUID id = UUID.randomUUID();
         String serviceName = "service1";
         String environment = "env1";
         Instant detectedAt = Instant.now();
