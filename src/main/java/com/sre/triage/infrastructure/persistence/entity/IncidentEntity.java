@@ -4,6 +4,8 @@ import com.sre.triage.domain.model.Incident;
 import com.sre.triage.domain.model.IncidentStatus;
 import com.sre.triage.domain.model.TriageReport;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -12,6 +14,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "incidents")
+@Getter
+@Setter
 public class IncidentEntity {
 
     @Id
@@ -38,13 +42,14 @@ public class IncidentEntity {
 
     // Maps our complex record directly to a native PostgreSQL JSONB / standard JSON column
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "triage_report", columnDefinition = "jsonb")
+    @Column(name = "triage_report", columnDefinition = "json")
     private TriageReport triageReport;
 
     // --- Constructors ---
 
     // Required by Hibernate specs - kept protected so developers use mapping factory methods instead
-    protected IncidentEntity() {}
+    protected IncidentEntity() {
+    }
 
     // --- Domain Mapping Factory Methods (The Bridge) ---
 
@@ -90,26 +95,4 @@ public class IncidentEntity {
         this.triageReport = incident.getReport();
     }
 
-    // --- Standard Getters & Setters ---
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public String getServiceName() { return serviceName; }
-    public void setServiceName(String serviceName) { this.serviceName = serviceName; }
-
-    public String getEnvironment() { return environment; }
-    public void setEnvironment(String environment) { this.environment = environment; }
-
-    public Instant getDetectedAt() { return detectedAt; }
-    public void setDetectedAt(Instant detectedAt) { this.detectedAt = detectedAt; }
-
-    public String getRawLogDump() { return rawLogDump; }
-    public void setRawLogDump(String rawLogDump) { this.rawLogDump = rawLogDump; }
-
-    public IncidentStatus getStatus() { return status; }
-    public void setStatus(IncidentStatus status) { this.status = status; }
-
-    public TriageReport getTriageReport() { return triageReport; }
-    public void setTriageReport(TriageReport triageReport) { this.triageReport = triageReport; }
 }
